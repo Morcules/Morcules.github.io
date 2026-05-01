@@ -5,20 +5,21 @@ categories: [Networking, C]
 tags: [performance, multi-threading, memory]
 ---
 
-When working with multithreaded C code, atomic operations often look cheap, until they become your biggest bottleneck.
-In my case, a small change in how threads acquired memory reduced CPU usage by 40-50%, cutting execution from roughly 2 billion cycles to 1 billion cycles when sending 50MB of data.
+When working with multi-threaded C code, atomic operations often look cheap, until they become your biggest bottleneck.
+In my case, a small change in how threads acquired memory reduced CPU usage by 40-50%, cutting execution from roughly 2 billion cycles to 1 billion cycles when sending 50MB of data in my networking library.
 
 ## Performance Changes
 ### Before:
 - CPU Cycles : 2,273,393,860
 - User Cpu Time : 0.58s
 - System Cpu Time : 0.23s
+
 ### After:
 - CPU Cycles : 1,005,063,001
 - User Cpu Time : 0.24s
 - System Cpu Time : 0.17s
 
-## The Problem: Multithreaded Allocator
+## The Problem: Multi-threaded Memory Allocator
 I was building a networking library where multiple threads needed fast access to pre-allocated memory.
 To handle this, I implemented a custom allocator:
 - multiple allocator stacks
@@ -29,7 +30,7 @@ To handle this, I implemented a custom allocator:
 Allocator structure:
 ```
 struct SwiftNetMemoryAllocator {
-    SwiftNetMemoryAllocatorStack* stacks\[64\];
+    SwiftNetMemoryAllocatorStack* stacks[64];
 };
 ```
 Each stack had:
@@ -81,7 +82,7 @@ find the first available stack in a few CPU cycles
 
 ## Outro
 This simple change might seem too small to make a huge difference, but in my case the library was allocating around 50,000 items.
-Between allocating, freeing, cleaning up, and handling spinlocks on a stack, the overhead adds up quickly.
+Allocating, freeing, cleaning up used a spinlocks, which makes the overhead add up quickly.
 If we assume each spin-lock costs around ~500 CPU cycles, that alone results in roughly 100 million wasted CPU cycles.
 
 But the real impact is even larger due to cache inefficiency.
