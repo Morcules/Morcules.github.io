@@ -82,7 +82,7 @@ find the first available stack in a few CPU cycles
 
 ## Outro
 This simple change might seem too small to make a huge difference, but in my case the library was allocating around 50,000 items.
-Allocating, freeing, cleaning up used a spinlocks, which makes the overhead add up quickly.
+Allocating, freeing, cleaning up used spinlocks, which makes the overhead add up quickly.
 If we assume each spin-lock costs around ~500 CPU cycles, that alone results in roughly 100 million wasted CPU cycles.
 
 But the real impact is even larger due to cache inefficiency.
